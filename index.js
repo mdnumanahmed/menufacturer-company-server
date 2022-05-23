@@ -36,14 +36,21 @@ function verifyJWT(req, res, next) {
 async function run() {
   try {
     await client.connect();
-    const productCollection = client.db("doctors_portal").collection("products");
+    const productCollection = client.db("ns_industries").collection("products");    
+    const userCollection = client.db('ns_industries').collection('users');
 
+    // GET API for product
     app.get("/product", async (req, res) => {
-      const query = {};
-      const cursor = productCollection.find(query);
-      const services = await cursor.toArray();
+      const services = await productCollection.find().toArray();
       res.send(services);
     });
+
+    // GET API for user 
+    app.get('/user', verifyJWT, async (req, res) => {
+        const users = await userCollection.find().toArray();
+        res.send(users);
+      });
+      
   } finally {
 
   }
