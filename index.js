@@ -53,8 +53,15 @@ async function run() {
 
     // GET API for product
     app.get("/product", async (req, res) => {
-      const services = await productCollection.find().toArray();
-      res.send(services);
+      const products = await productCollection.find().toArray();
+      res.send(products);
+    });
+
+    // POST API for product 
+    app.post('/product', verifyJWT, verifyAdmin, async (req, res) => {
+      const product = req.body;
+      const result = await productCollection.insertOne(product);
+      res.send(result);
     });
 
     // GET API for user 
