@@ -39,6 +39,7 @@ async function run() {
     const productCollection = client.db("ns_industries").collection("products");    
     const orderCollection = client.db("ns_industries").collection("orders");    
     const userCollection = client.db('ns_industries').collection('users');
+    const reviewCollection = client.db('ns_industries').collection('reviews');
 
     const verifyAdmin = async (req, res, next) => {
       const requester = req.decoded.email;
@@ -101,6 +102,19 @@ async function run() {
       const result = await userCollection.updateOne(filter, updateDoc);
       res.send(result);
     })
+
+    // GET API for review
+    app.get("/review", async (req, res) => {
+      const reviews = await reviewCollection.find().toArray();
+      res.send(reviews);
+    });
+
+    // POST API for review 
+    app.post('/review', verifyJWT, async (req, res) => {
+      const review = req.body;
+      const result = await reviewCollection.insertOne(review);
+      res.send(result);
+    });
       
   } finally {
 
