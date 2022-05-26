@@ -123,6 +123,12 @@ async function run() {
       res.send(item);
   });
 
+  
+  app.post('/order', async (req, res) => {
+    const order = req.body;
+    const result = await orderCollection.insertOne(order);
+    res.send(result);
+});
       
   } finally {
 
