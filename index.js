@@ -66,12 +66,12 @@ async function run() {
       res.send(result);
     });
 
-    // GET API for product by ID 
+    // GET API for product by ID
     app.get("/product/:id", async (req, res) => {
       const id = req.params.id;
       const query = { _id: ObjectId(id) };
       const item = await productCollection.findOne(query);
-      console.log(item)
+      console.log(item);
       res.send(item);
     });
 
@@ -128,9 +128,9 @@ async function run() {
       const review = req.body;
       const result = await reviewCollection.insertOne(review);
       res.send(result);
-    });   
+    });
 
-    // POST API for order 
+    // POST API for order
     app.post("/order", async (req, res) => {
       const order = req.body;
       const result = await orderCollection.insertOne(order);
@@ -138,22 +138,34 @@ async function run() {
     });
 
     // GET API for order with using email query
-    app.get('/order', verifyJWT, async (req, res) => {
+    app.get("/order", verifyJWT, async (req, res) => {
       const email = req.query.email;
       const decodedEmail = req.decoded.email;
       if (email === decodedEmail) {
-          const query = { email: email };
-          const cursor = orderCollection.find(query);
-          const services = await cursor.toArray();
-          return res.send(services);
+        const query = { email: email };
+        const cursor = orderCollection.find(query);
+        const orders = await cursor.toArray();
+        return res.send(orders);
+      } else {
+        return res.status(403).send({ message: "Forbidden Access" });
       }
-      else {
-          return res.status(403).send({ message: 'Forbidden Access' })
-      }
-  });
+    });
 
-  } finally {
+    app.get("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const order = await orderCollection.findOne(query);
+      res.send(order);
+    });
+
     
+    app.delete("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const query = { _id: ObjectId(id) };
+      const result = await orderCollection.deleteOne(query);
+      res.send(result);
+    });
+  } finally {
   }
 }
 run().catch(console.dir);
