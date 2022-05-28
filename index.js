@@ -2,14 +2,20 @@ const express = require("express");
 const cors = require("cors");
 const jwt = require("jsonwebtoken");
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
+const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
 require("dotenv").config();
 
 const app = express();
 const port = process.env.PORT || 5000;
 
+// Middleware 
+app.use(cors());
+app.use(express.json());
+
 // nsAdmin
 // LoQ8vcLmtgOGhRmC
 // 9d1e1906b3fc5c2f4c167339fead3761f454c3df9993fe55414fd258133d8d6bbd3b8bbb719926257a3a38940baec392da8cce4407b658d5dc141d4f55c76b0b
+// sk_test_51L4CHNHvaAGSkGoDthk8u6lf4uMdR1AL5yCzMr9M8a1KkHCXwQNTNbsjPVOE35EjDZgOu0yLUcEJNjMhT9XDWEuX00XBn4PWKZ
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.hd1os.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, {
@@ -40,6 +46,7 @@ async function run() {
     const orderCollection = client.db("ns_industries").collection("orders");
     const userCollection = client.db("ns_industries").collection("users");
     const reviewCollection = client.db("ns_industries").collection("reviews");
+    const paymentCollection = client.db("ns_industries").collection("payments");
 
     const verifyAdmin = async (req, res, next) => {
       const requester = req.decoded.email;
@@ -158,6 +165,20 @@ async function run() {
       res.send(order);
     });
 
+    app.patch("/order/:id", verifyJWT, async (req, res) => {
+      const id = req.params.id;
+      const payment = req.body;
+      const query = { _id: ObjectId(id) };
+      const updatedDoc = {
+        $set: {
+          paid: true,
+          transactionId: payment.transactionId,
+        },
+      };
+      const result = await paymentCollection.insertOne(payment);
+      const updatedOrder = await orderCollection.updateOne(query, updatedDoc);
+      res.send(updatedOrder);
+    });
     
     app.delete("/order/:id", verifyJWT, async (req, res) => {
       const id = req.params.id;
@@ -165,13 +186,23 @@ async function run() {
       const result = await orderCollection.deleteOne(query);
       res.send(result);
     });
+
+    app.post('/create-payment-intent', verifyJWT, async (req, res) => {
+      const order = req.body;
+      const price = order.price;
+      const amount = price * 100;
+      const paymentIntent = await stripe.paymentIntents.create({
+          amount: amount,
+          currency: 'usd',
+          payment_method_types: ['card']
+      });
+      res.send({ clientSecret: paymentIntent.client_secret })
+  });
   } finally {
   }
 }
 run().catch(console.dir);
 
-app.use(cors());
-app.use(express.json());
 
 app.get("/", (req, res) => {
   res.send("NS Industries Server is Running!");
